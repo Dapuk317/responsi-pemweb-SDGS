@@ -14,12 +14,12 @@ $stmt = $conn->prepare("
         o.subtotal,
         o.shipping_cost,
         o.total_amount,
-        o.payment_method,
+        t.payment_method,
         o.status,
         COUNT(oi.id) AS total_items
     FROM orders o
-    LEFT JOIN order_items oi
-        ON o.id = oi.order_id
+    LEFT JOIN transactions t ON t.order_id = o.id
+    LEFT JOIN order_items oi ON o.id = oi.order_id
     WHERE o.user_id = ?
     GROUP BY
         o.id,
@@ -28,7 +28,7 @@ $stmt = $conn->prepare("
         o.subtotal,
         o.shipping_cost,
         o.total_amount,
-        o.payment_method,
+        t.payment_method,
         o.status
     ORDER BY o.order_date DESC, o.id DESC
 ");
@@ -51,7 +51,7 @@ function order_status_label($status)
         'pending' => 'Menunggu Pembayaran',
         'processing' => 'Sedang Diproses',
         'shipped' => 'Sedang Dikirim',
-        'complete' => 'Selesai'
+        'completed' => 'Selesai'
     ];
 
     return $labels[$status] ?? ucfirst($status);
@@ -64,7 +64,7 @@ function order_status_color($status)
         'pending' => '#f0ad4e',
         'processing' => '#0d6efd',
         'shipped' => '#6f42c1',
-        'complete' => '#198754'
+        'completed' => '#198754'
     ];
 
     return $colors[$status] ?? '#6c757d';
@@ -285,7 +285,7 @@ function order_status_color($status)
                         </div>
 
                         <div class="info-value">
-                            <?= e($order['payment_method']) ?>
+                            <?= e(($order['payment_method'] ?? '') === 'bank_transfer' ? 'Transfer Bank' : (($order['payment_method'] ?? '') === 'cash_on_delivery' ? 'COD' : '-')) ?>
                         </div>
 
                     </div>
@@ -318,7 +318,7 @@ function order_status_color($status)
 
                 <?php if (
                     $order['status'] === 'pending' &&
-                    $order['payment_method'] === 'transfer'
+                    $order['payment_method'] === 'bank_transfer'
                 ): ?>
 
                     <a class="detail-button"

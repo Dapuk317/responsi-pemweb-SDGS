@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/auth_check.php';
-require_role(['customer']);
+require_role(['customer', 'seller']);
 
 $categories = [];
 $products = [];
@@ -98,6 +98,10 @@ try {
 
             <a href="/GreenCycle/pages/products.php" class="nav-link">
                 Produk
+            </a>
+
+            <a href="<?= ($_SESSION['role'] ?? '') === 'seller' ? '/GreenCycle/seller/dashboard.php' : '/GreenCycle/customer/dashboard.php' ?>" class="nav-link">
+                <?= ($_SESSION['role'] ?? '') === 'seller' ? 'Dashboard Seller' : 'Dashboard Saya' ?>
             </a>
 
             <a href="/GreenCycle/pages/home.php#tentang" class="nav-link">

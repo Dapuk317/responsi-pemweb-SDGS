@@ -114,7 +114,7 @@ if (!$not_found) {
                 ON r.order_item_id = oi.id
             WHERE oi.product_id = ?
               AND o.user_id = ?
-              AND o.status = 'complete'
+              AND o.status = 'completed'
               AND r.id IS NULL
             ORDER BY o.order_date DESC
             LIMIT 1

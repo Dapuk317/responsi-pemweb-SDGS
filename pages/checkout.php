@@ -193,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     "\nAlamat: " . $address;
 
                 // Metode pembayaran sementara transfer bank.
-                $payment_method = 'transfer';
+                $payment_method = 'bank_transfer';
 
                 // Membuat kode pesanan unik.
                 $order_code =
@@ -210,14 +210,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         phone,
                         subtotal,
                         shipping_cost,
-                        payment_method,
                         total_amount,
                         notes
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
 
                 $stmt->bind_param(
-                    "siissddsds",
+                    "siissddds",
                     $order_code,
                     $user_id,
                     $store_id,
@@ -225,7 +224,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $phone,
                     $subtotal,
                     $shipping_cost,
-                    $payment_method,
                     $total_amount,
                     $notes
                 );
@@ -295,6 +293,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
+                // Menyimpan transaksi untuk setiap pesanan.
+                $stmtTx = $conn->prepare("
+                    INSERT INTO transactions (order_id, payment_method, payment_status, payment_proof, created_at, updated_at)
+                    VALUES (?, ?, 'pending', NULL, NOW(), NOW())
+                ");
+                $stmtTx->bind_param("is", $order_id, $payment_method);
+                $stmtTx->execute();
+                $stmtTx->close();
+
                 $createdOrders[] = [
                     'order_code' => $order_code,
                     'total_amount' => $total_amount
@@ -315,7 +322,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Menyimpan informasi pesanan untuk halaman konfirmasi.
             $_SESSION['last_orders'] = $createdOrders;
 
-            header('Location: /GreenCycle/pages/order-success.php');
+            header('Location: /GreenCycle/pages/order-succes.php');
             exit;
 
         } catch (Throwable $e) {

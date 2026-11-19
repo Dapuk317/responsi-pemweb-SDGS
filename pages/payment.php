@@ -16,17 +16,11 @@ if ($order_code === '') {
 // Mengambil pesanan milik customer yang sedang login.
 $stmt = $conn->prepare("
     SELECT
-        id,
-        order_code,
-        subtotal,
-        shipping_cost,
-        total_amount,
-        payment_method,
-        status,
-        created_at
-    FROM orders
-    WHERE order_code = ?
-      AND user_id = ?
+        o.id, o.order_code, o.subtotal, o.shipping_cost, o.total_amount,
+        t.payment_method, t.payment_status, t.payment_proof, o.status, o.created_at
+    FROM orders o
+    INNER JOIN transactions t ON t.order_id = o.id
+    WHERE o.order_code = ? AND o.user_id = ?
     LIMIT 1
 ");
 
@@ -144,6 +138,14 @@ $account_holder = 'GreenCycle (Simulasi)';
     <p>
         Silakan periksa informasi pembayaran pesanan GreenCycle.
     </p>
+    <?php if (!empty($_SESSION['flash'])): ?>
+        <p role="status" style="padding:12px;background:#e8f5e9;color:#176b43;border-radius:8px;"><?= e($_SESSION['flash']) ?></p>
+        <?php unset($_SESSION['flash']); ?>
+    <?php endif; ?>
+    <?php if (!empty($_SESSION['flash_error'])): ?>
+        <p role="alert" style="padding:12px;background:#ffebee;color:#b42318;border-radius:8px;"><?= e($_SESSION['flash_error']) ?></p>
+        <?php unset($_SESSION['flash_error']); ?>
+    <?php endif; ?>
 
     <div class="payment-card">
 
@@ -230,14 +232,29 @@ $account_holder = 'GreenCycle (Simulasi)';
         <ol>
             <li>Periksa total pembayaran.</li>
             <li>Gunakan informasi rekening simulasi di atas.</li>
-            <li>Dalam tahap pengembangan ini, pembayaran belum diproses secara nyata.</li>
-            <li>Fitur unggah bukti pembayaran akan tersedia pada tahap berikutnya.</li>
+            <li>Unggah bukti transfer untuk diperiksa oleh admin.</li>
+            <li>Jangan mengirim uang sungguhan karena rekening ini hanya simulasi.</li>
         </ol>
 
-        <a href="/GreenCycle/pages/products.php"
-           class="payment-button">
-            Kembali ke Katalog
-        </a>
+        <?php if ($order['payment_status'] === 'pending'): ?>
+            <?php if (empty($order['payment_proof'])): ?>
+                <form action="/GreenCycle/customer/upload-payment-proof.php" method="POST" enctype="multipart/form-data" style="margin-top:20px;">
+                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                    <input type="hidden" name="order_code" value="<?= e($order['order_code']) ?>">
+                    <label for="paymentProof"><strong>Unggah Bukti Pembayaran (JPG/PNG/WEBP, maks. 3MB)</strong></label><br>
+                    <input id="paymentProof" type="file" name="payment_proof" accept="image/jpeg,image/png,image/webp" required style="display:block;margin:12px 0;">
+                    <button type="submit" class="payment-button" style="border:0;cursor:pointer;">Kirim Bukti Pembayaran</button>
+                </form>
+            <?php else: ?>
+                <p><strong>Bukti pembayaran sudah diunggah.</strong> Status: menunggu verifikasi admin.</p>
+            <?php endif; ?>
+        <?php elseif ($order['payment_status'] === 'verified'): ?>
+            <p><strong>Pembayaran telah diverifikasi.</strong></p>
+        <?php else: ?>
+            <p><strong>Pembayaran ditolak.</strong> Silakan hubungi admin.</p>
+        <?php endif; ?>
+
+        <a href="/GreenCycle/pages/products.php" class="payment-button">Kembali ke Katalog</a>
 
     </div>
 

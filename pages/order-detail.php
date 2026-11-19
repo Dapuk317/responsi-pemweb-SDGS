@@ -14,20 +14,20 @@ if (!$order_id || $order_id <= 0) {
 // Mengambil detail pesanan milik customer.
 $stmt = $conn->prepare("
     SELECT
-        id,
-        order_code,
-        order_date,
-        shipping_address,
-        phone,
-        subtotal,
-        shipping_cost,
-        total_amount,
-        payment_method,
-        status,
-        notes
-    FROM orders
-    WHERE id = ?
-      AND user_id = ?
+        o.id,
+        o.order_code,
+        o.order_date,
+        o.shipping_address,
+        o.phone,
+        o.subtotal,
+        o.shipping_cost,
+        o.total_amount,
+        t.payment_method,
+        o.status,
+        o.notes
+    FROM orders o
+    LEFT JOIN transactions t ON t.order_id = o.id
+    WHERE o.id = ? AND o.user_id = ?
     LIMIT 1
 ");
 
@@ -83,14 +83,14 @@ $status_labels = [
     'pending' => 'Menunggu Pembayaran',
     'processing' => 'Sedang Diproses',
     'shipped' => 'Sedang Dikirim',
-    'complete' => 'Selesai'
+    'completed' => 'Selesai'
 ];
 
 $status_colors = [
     'pending' => '#f0ad4e',
     'processing' => '#0d6efd',
     'shipped' => '#6f42c1',
-    'complete' => '#198754'
+    'completed' => '#198754'
 ];
 
 $status = $order['status'];
@@ -375,8 +375,22 @@ if (isset($_GET['review'])) {
 
         <div class="info-row">
             <strong>Metode Pembayaran</strong>
-            <?= e($order['payment_method']) ?>
+            <?= e(($order['payment_method'] ?? '') === 'bank_transfer' ? 'Transfer Bank' : (($order['payment_method'] ?? '') === 'cash_on_delivery' ? 'COD' : '-')) ?>
         </div>
+
+        <?php if ($order['status'] === 'shipped'): ?>
+            <div style="margin-top: 15px; padding: 15px; background: #eef7e6; border-radius: 8px; border: 1px solid #c7e6a7;">
+                <p style="margin: 0 0 10px; font-weight: bold; color: #145c3b;">Paket Anda sedang dalam perjalanan. Jika barang daur ulang sudah Anda terima dengan baik, silakan konfirmasi di bawah ini:</p>
+                <form action="/GreenCycle/customer/confirm-order.php" method="POST" onsubmit="return confirm('Konfirmasi bahwa barang pesanan daur ulang sudah Anda terima?');">
+                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                    <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
+                    <input type="hidden" name="redirect_url" value="/GreenCycle/pages/order-detail.php?id=<?= (int)$order['id'] ?>">
+                    <button type="submit" style="background: #176b43; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: bold; cursor: pointer;">
+                        ✓ Konfirmasi Pesanan Diterima
+                    </button>
+                </form>
+            </div>
+        <?php endif; ?>
 
     </div>
 
@@ -418,7 +432,7 @@ if (isset($_GET['review'])) {
 
                 </div>
 
-                <?php if (in_array($status, ['complete', 'completed'], true)): ?>
+                <?php if ($status === 'completed'): ?>
 
                     <?php if (!empty($item['review_id'])): ?>
 
@@ -617,7 +631,7 @@ if (isset($_GET['review'])) {
 
     <?php if (
         $order['status'] === 'pending' &&
-        $order['payment_method'] === 'transfer'
+        $order['payment_method'] === 'bank_transfer'
     ): ?>
 
         <a href="/GreenCycle/pages/payment.php?code=<?= urlencode($order['order_code']) ?>"

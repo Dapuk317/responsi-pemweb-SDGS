@@ -57,7 +57,7 @@ $stmt = $conn->prepare("
     WHERE oi.id = ?
       AND o.id = ?
       AND o.user_id = ?
-      AND o.status IN ('complete', 'completed')
+      AND o.status = 'completed'
     LIMIT 1
 ");
 

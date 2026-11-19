@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/auth_check.php';
-require_role(['customer']);
+require_role(['customer', 'seller']);
 
 // Mengambil input pencarian.
 $search = trim((string) ($_GET['q'] ?? ''));
@@ -589,15 +589,22 @@ $customerName = $_SESSION['name'] ?? 'Customer';
                 Produk
             </a>
 
+            <?php if (($_SESSION['role'] ?? '') === 'customer'): ?>
             <a href="/GreenCycle/pages/cart.php" class="nav-link">
                 <i class="fas fa-shopping-cart"></i>
                 Keranjang
             </a>
+            <?php endif; ?>
 
             <a href="/GreenCycle/pages/order-history.php"
                 class="nav-link">
                 <i class="fas fa-history"></i>
                 Riwayat Pesanan
+            </a>
+
+            <a href="/GreenCycle/customer/dashboard.php"
+                class="nav-link">
+                Dashboard Saya
             </a>
 
             <a href="/GreenCycle/pages/home.php#tentang"

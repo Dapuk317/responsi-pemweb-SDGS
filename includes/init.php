@@ -1,5 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.use_strict_mode', '1');
+    session_set_cookie_params(['lifetime' => 0, 'path' => '/', 'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off', 'httponly' => true, 'samesite' => 'Lax']);
     session_start();
 }
 
@@ -62,7 +64,7 @@ function redirect_by_role()
             exit;
 
         case 'customer':
-            header('Location: /GreenCycle/pages/home.php');
+            header('Location: /GreenCycle/customer/dashboard.php');
             exit;
 
         default:
